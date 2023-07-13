@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import 'db/database.dart';
+import 'model/evento.dart';
+
 class ListBuilder extends StatefulWidget {
   const ListBuilder({
     super.key,
@@ -17,6 +20,8 @@ class ListBuilder extends StatefulWidget {
 }
 
 class _ListBuilderState extends State<ListBuilder> {
+  late List<Evento> eventos;
+  bool isLoading = false;
   void _toggle(int index) {
     if (widget.isSelectionMode) {
       setState(() {
@@ -24,12 +29,46 @@ class _ListBuilderState extends State<ListBuilder> {
       });
     }
   }
+  @override
+  void initState(){
+    super.initState();
+    refreshList();
+  }
+
+  Future refreshList() async {
+    setState(() {
+      isLoading = true;
+    });
+    eventos = await EventDatabase.instance.readAllEventos();
+    setState(() {
+      isLoading = false;
+    });
+  }
+
+  @override 
+  void dispose(){
+    EventDatabase.instance.close();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return ListView.builder(
-        itemCount: widget.selectedList.length,
+    return Center(
+          child: isLoading
+              ? const CircularProgressIndicator()
+              : eventos.isEmpty
+                  ? const Text(
+                      'No hay eventos registrados',
+                      style: TextStyle(color: Colors.blue, fontSize: 24),
+                    )
+                  : buildList(),
+        );
+  }
+
+  Widget buildList() => ListView.builder(
+        itemCount: eventos.length,
         itemBuilder: (_, int index) {
+          final note = eventos[index];
           return ListTile(
               onTap: () => _toggle(index),
               onLongPress: () {
@@ -46,7 +85,6 @@ class _ListBuilderState extends State<ListBuilder> {
                       onChanged: (bool? x) => _toggle(index),
                     )
                   : const SizedBox.shrink(),
-              title: Text('item $index'));
+              title: Text(note.title));
         });
-  }
 }

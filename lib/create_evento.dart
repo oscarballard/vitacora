@@ -1,9 +1,15 @@
 import 'package:date_field/date_field.dart';
 import 'package:flutter/material.dart';
+import 'package:tarea8/model/evento.dart';
+import 'package:tarea8/widget/btn_foto.dart';
+
+import 'db/database.dart';
 
 // Define a custom Form widget.
+// ignore: must_be_immutable
 class CreateEvento extends StatefulWidget {
-  const CreateEvento({super.key});
+  late int? id = 0;
+  CreateEvento({Key? key, this.id}) : super(key: key);
 
   @override
   State<CreateEvento> createState() => _CreateEventoState();
@@ -14,11 +20,17 @@ class CreateEvento extends StatefulWidget {
 class _CreateEventoState extends State<CreateEvento> {
   TextEditingController dateinput = TextEditingController();
   final myController = TextEditingController();
+  final myControllerDescripcion = TextEditingController();
+  late String title;
+  late String descripcion;
+  late DateTime fecha;
+  late int id = 0;
+  File imagen;
 
   @override
   void dispose() {
     // Clean up the controller when the widget is disposed.
-    myController.dispose();
+    // myController.dispose();
     super.dispose();
   }
 
@@ -57,14 +69,14 @@ class _CreateEventoState extends State<CreateEvento> {
                 validator: (e) =>
                     (e?.day ?? 0) == 1 ? 'Please not the first day' : null,
                 onDateSelected: (DateTime value) {
-                  print(value);
+                  fecha = value;
                 },
               ),
               const Padding(
                 padding: EdgeInsets.all(8.0),
               ),
               TextField(
-                  controller: myController,
+                  controller: myControllerDescripcion,
                   minLines: 3,
                   keyboardType: TextInputType.multiline,
                   maxLines: null,
@@ -78,24 +90,109 @@ class _CreateEventoState extends State<CreateEvento> {
                     labelStyle: TextStyle(
                         fontSize: 13, color: Colors.blue), //label style
                   )),
+              const Padding(
+                padding: EdgeInsets.all(25.0),
+              ),
+              Row(
+                children: <Widget>[
+                  Expanded(
+                      child: ElevatedButton(
+                    onPressed: () {
+                      opciones(context);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        side: const BorderSide(color: Colors.blue),
+                      ),
+                    ),
+                    child: const SizedBox(
+                      width: 100,
+                      height: 100,
+                      child: Icon(
+                        Icons.image,
+                        size: 50,
+                        color: Colors.blue,
+                      ),
+                    ),
+                  )),
+                  const Padding(
+                    padding: EdgeInsets.all(8.0),
+                  ),
+                  Expanded(
+                      child: ElevatedButton(
+                    onPressed: () {
+                      // Acción a realizar al presionar el botón
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        side: const BorderSide(color: Colors.blue),
+                      ),
+                    ),
+                    child: const SizedBox(
+                      width: 100,
+                      height: 100,
+                      child: Icon(
+                        Icons.voice_chat,
+                        size: 50,
+                        color: Colors.blue,
+                      ),
+                    ),
+                  )),
+                ],
+              )
             ],
           )),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          showDialog(
-            context: context,
-            builder: (context) {
-              return AlertDialog(
-                // Retrieve the text the that user has entered by using the
-                // TextEditingController.
-                content: Text(myController.text),
-              );
-            },
-          );
-        },
+        onPressed: addOrUpdateNote,
         tooltip: 'Show me the value!',
-        child: const Icon(Icons.text_fields),
+        child: const Icon(Icons.save),
       ),
     );
+  }
+
+  Future updateNote() async {
+    final note = Evento(
+      title: myController.text,
+      fecha: fecha,
+      descripcion: myControllerDescripcion.text,
+      pathImage: '',
+      pathVoice: '',
+    );
+
+    await EventDatabase.instance.update(note);
+  }
+
+  Future addNote() async {
+    final note = Evento(
+      title: myController.text,
+      fecha: fecha,
+      descripcion: myControllerDescripcion.text,
+      pathImage: '',
+      pathVoice: '',
+    );
+    await EventDatabase.instance.create(note);
+  }
+
+  void addOrUpdateNote() async {
+    final isUpdating = widget.id != 0; // Usar widget.id en lugar de id
+    if (isUpdating) {
+      await updateNote();
+    } else {
+      await addNote();
+    }
+
+    Navigator.of(context).pop();
+  }
+
+  opciones(context) {
+    showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return const BtnFoto();
+        });
   }
 }

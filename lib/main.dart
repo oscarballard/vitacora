@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:tarea8/ListView.dart';
+import 'package:tarea8/list_view.dart';
 
 import 'create_evento.dart';
 import 'grid_view.dart';
-import 'lista.dart';
 
 void main() {
   runApp(const MyApp());
@@ -66,7 +65,7 @@ class _MyAppBoodyState extends State<MyAppBody> {
           });
         },
       ),
-      const CreateEvento()
+      CreateEvento(id:0)
       // const PaginaPerfil()
     ];
   }

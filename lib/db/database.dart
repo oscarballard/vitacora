@@ -13,6 +13,7 @@ class EventDatabase {
     if (_database != null) return _database!;
 
     _database = await _initDB("event.db");
+    print('me conecte');
     return _database!;
   }
 
@@ -23,7 +24,7 @@ class EventDatabase {
   }
 
   Future _createDB(Database db, int version) async {
-    const idType = 'INTERGER PRIMARY KEY AUTOINCREMENT';
+    const idType = 'INTEGER PRIMARY KEY AUTOINCREMENT';
     const stringType = "Text NOT NULL";
 
     await db.execute('''
@@ -36,33 +37,50 @@ CREATE TABLE $tableEventos(
   ${EventField.pathVoice} $stringType
 )
 ''');
+  }
 
-    Future<Evento> create(Evento evento) async {
-      final db = await instance.database;
-      final json = evento.toJson();
-      const columns =
-          '${EventField.title},${EventField.fecha},${EventField.descripcion},${EventField.pathImage},${EventField.pathVoice}';
-      final values =
-          '${json[EventField.title]},${json[EventField.fecha]},${json[EventField.descripcion]},${json[EventField.pathImage]},${json[EventField.pathVoice]}';
-      final id = await db
-          .rawInsert('INSERT INTO table_name ($columns) VALUES ($values)');
+  Future<Evento> create(Evento evento) async {
+    // final db = await instance.database;
+    final db = await _initDB("event.db");
 
-      return evento.copy(id: id);
+    final id = await db.insert(tableEventos, evento.toJson());
+    return evento.copy(id: id);
+  }
+
+  Future<Evento> readEvento(int id) async {
+    final db = await instance.database;
+    final maps = await db.query(tableEventos,
+        columns: EventField.values,
+        where: '${EventField.id} = ?',
+        whereArgs: [id]);
+
+    if (maps.isNotEmpty) {
+      return Evento.fromJson(maps.first);
+    } else {
+      throw Exception('ID $id not found');
     }
+  }
 
-    Future<Evento> readEvento(int id) async {
-      final db = await instance.database;
-      final maps = await db.query(tableEventos,
-          columns: EventField.values,
-          where: '${EventField.id} = ?',
-          whereArgs: [id]);
+  Future<List<Evento>> readAllEventos() async {
+    final db = await instance.database;
 
-      if(maps.isNotEmpty){
-        return Evento.fromJson(maps.first);
-      }else{
-        throw Exception('ID $id not found');
-      }
-    }
+    const orderBy = '${EventField.fecha} ASC';
+    final result =
+        await db.rawQuery("SELECT * FROM $tableEventos ORDER BY $orderBy");
+
+    return result.map((json) => Evento.fromJson(json)).toList();
+  }
+
+  Future<int> update(Evento evento) async {
+    final db = await instance.database;
+    return db.update(tableEventos, evento.toJson(),
+        where: "${EventField.id} = ?", whereArgs: [evento.id]);
+  }
+
+  Future<int> delete(int id) async {
+    final db = await instance.database;
+    return db
+        .delete(tableEventos, where: "${EventField.id} = ?", whereArgs: [id]);
   }
 
   Future close() async {
